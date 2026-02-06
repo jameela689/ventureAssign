@@ -47,7 +47,7 @@ const Login = () => {
       setApiError('');
       
       try {
-        const response = await fetch('https://ventureassign.onrender.com/users/login', {
+        const response = await fetch('https://ventureassign.onrender.com/login', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -62,7 +62,7 @@ const Login = () => {
         Cookies.set('jwt_token', data.token, { 
           expires: 7,path: '/'
         });
-        navigate('/tasks');
+        navigate('/home');
       } catch (error) {
         setApiError(error.message);
         console.error('Login error:', error);
