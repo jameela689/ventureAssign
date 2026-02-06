@@ -196,7 +196,7 @@ app.get('/users', authenticateToken, async (request, response) => {
 });
 
 // POST /users/login - User login
-app.post('login', async (request, response) => {
+app.post('/login', async (request, response) => {
     const { email, password } = request.body;
 
     if (!email || !password) {
