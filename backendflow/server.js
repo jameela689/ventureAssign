@@ -207,13 +207,13 @@ app.post('/users/login', async (request, response) => {
         const user = await db.get(`SELECT * FROM users WHERE email = ?`, [email]);
         
         if (!user) {
-            return response.status(400).json({ error: 'Invalid credentials' });
+            return response.status(400).json({ error: 'Invalid user credentials' });
         }
 
         const isPasswordValid = await bcrypt.compare(password, user.password);
         
         if (!isPasswordValid) {
-            return response.status(400).json({ error: 'Invalid credentials' });
+            return response.status(400).json({ error: 'Invalid password credentials' });
         }
 
         // Generate new token
