@@ -5,7 +5,7 @@ import './Login.css';
 
 const Login = () => {
   const [formData, setFormData] = useState({
-    name: '',
+    email: '',
     password: ''
   });
   const [errors, setErrors] = useState({});
@@ -27,8 +27,8 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     
-    if (!formData.name.trim()) {
-      newErrors.name = 'name is required';
+    if (!formData.email.trim()) {
+      newErrors.email = 'email is required';
     }
 
     if (!formData.password) {
@@ -47,6 +47,7 @@ const Login = () => {
       setApiError('');
       
       try {
+       
         const response = await fetch('https://ventureassign.onrender.com/login', {
           method: 'POST',
           headers: {
@@ -95,17 +96,17 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="login-form">
           <div className="form-group">
-            <label htmlFor="name">Name</label>
+            <label htmlFor="name">Email</label>
             <input
               type="text"
-              id="name"
-              name="name"
-              value={formData.name}
+              id="email"
+              name="email"
+              value={formData.email}
               onChange={handleChange}
-              className={errors.name ? 'error' : ''}
-              autoComplete="name"
+              className={errors.email ? 'error' : ''}
+              autoComplete="email"
             />
-            {errors.name && <p className="error-message">{errors.name}</p>}
+            {errors.email && <p className="error-message">{errors.email}</p>}
           </div>
 
           <div className="form-group">
