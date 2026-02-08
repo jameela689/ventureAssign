@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
-import './Navbar.css';
+import './NavHomebar.css';
 
-const Navbar = () => {
+const NavHomebar = () => {
   const [items, setItems] = useState([]);
   const [cart, setCart] = useState([]); // Array of item objects
   const [orders, setOrders] = useState([]); // Array of order IDs
@@ -21,7 +21,7 @@ const Navbar = () => {
   const fetchItems = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:3001/items');
+      const response = await axios.get('https://ventureassign.onrender.com/items');
     
       if (response.data.success) {
         setItems(response.data.items);
@@ -35,7 +35,7 @@ const Navbar = () => {
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/carts', authHeader);
+      const res = await axios.get('https://ventureassign.onrender.com/carts', authHeader);
       console.log("res.data.cart=",res,res.data.cart)
       setCart(res.data.cart);
     } catch (err) {
@@ -52,7 +52,7 @@ const Navbar = () => {
   const addToCart = async (itemId) => {
     try {
       const payload = { items: [{ item_id: itemId, quantity: 1 }] };
-      const res = await axios.post('http://localhost:3001/carts', payload, authHeader);
+      const res = await axios.post('https://ventureassign.onrender.com/carts', payload, authHeader);
       console.log("update cart = ",res.data.cart)
       setCart(res.data.cart);
       alert('Item added to cart!');
@@ -74,7 +74,7 @@ const Navbar = () => {
 
 const showOrderHistory = async () => {
     try {
-      const res = await axios.get('http://localhost:3001/orders', authHeader);
+      const res = await axios.get('https://ventureassign.onrender.com/orders', authHeader);
       const orders = res.data.orders;
       if (!orders.length) return alert("No orders found.");
       const info = orders.map(o => `Order #${o.id} - $${o.total_amount} (${o.status})`).join('\n');
@@ -95,7 +95,7 @@ const showOrderHistory = async () => {
 const handleCheckout = async () => {
     if (!cart) return alert("Nothing to checkout");
     try {
-      await axios.post('http://localhost:3001/orders', { cart_id: cart.id }, authHeader);
+      await axios.post('https://ventureassign.onrender.com/orders', { cart_id: cart.id }, authHeader);
       alert('Order successful!');
       setCart(null); // Clear local cart state
       fetchItems(); // Refresh stock levels
@@ -159,4 +159,4 @@ const handleCheckout = async () => {
   );
 };
 
-export default Navbar;
+export default NavHomebar;
