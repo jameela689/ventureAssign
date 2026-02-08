@@ -1,0 +1,74 @@
+/* Navbar Styles */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    background: #1e293b;
+    color: white;
+    margin-bottom: 20px;
+  }
+  
+  .nav-brand { font-weight: bold; font-size: 1.5rem; }
+  
+  .nav-links { display: flex; gap: 15px; align-items: center; }
+  
+  .nav-btn {
+    background: transparent;
+    border: 1px solid #475569;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .cart-badge {
+    background: #ef4444;
+    padding: 2px 6px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    margin-left: 5px;
+  }
+  
+  .logout { border-color: #ef4444; color: #f87171; }
+  
+  /* Action Bar */
+  .action-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 30px;
+    padding: 0 20px;
+  }
+  
+  .btn-checkout {
+    background: #10b981;
+    color: white;
+    border: none;
+    padding: 12px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  .secondary-actions {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .btn-secondary {
+    flex: 1;
+    padding: 8px;
+    background: #e2e8f0;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  /* Grid & Cards (Add this to your existing card CSS) */
+  .item-card {
+    cursor: pointer; /* Makes the whole card look clickable */
+  }
+  
+  /* Rest of your previous HomePage.css remains the same */

@@ -5,6 +5,7 @@ const { open } = require('sqlite');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const cors = require('cors');
+const { seedItems } = require('./seedItems');
 
 const app = express();
 app.use(cors({
@@ -54,7 +55,7 @@ const dbInitAndConnect = async () => {
         await db.exec(`
             CREATE TABLE IF NOT EXISTS carts (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL UNIQUE,
+                user_id INTEGER NOT NULL,
                 status TEXT CHECK(status IN ('active', 'ordered')) DEFAULT 'active',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -100,6 +101,15 @@ const dbInitAndConnect = async () => {
             );
         `);
 
+        console.log(' All tables created successfully');
+
+        const result = await seedItems(db);
+
+if (!result.success) {
+  console.error('⚠ Seeding failed, but server will start');
+  // Server continues - manual seeding may be needed
+}
+
         app.listen(3001, () => console.log('Shopping API Server running on port 3001'));
     } catch (e) {
         console.log(`DB Error: ${e.message}`);
@@ -111,44 +121,76 @@ dbInitAndConnect();
 
 // ==================== MIDDLEWARE ====================
 
+// const authenticateToken = (request, response, next) => {
+//     try {
+//         const authHeader = request.headers['authorization'];
+        
+//         if (!authHeader) {
+//             return response.status(401).json({ error: 'No authorization header' });
+//         }
+
+//         const token = authHeader.split(' ')[1];
+        
+//         if (!token) {
+//             return response.status(401).json({ error: 'No token provided' });
+//         }
+
+//         jwt.verify(token, SECRET_KEY, async (err, decoded) => {
+//             if (err) {
+//                 return response.status(403).json({ error: 'Invalid or expired token' });
+//             }
+
+//             // Verify token exists in user_sessions
+//             const session = await db.get(
+//                 `SELECT * FROM user_sessions WHERE user_id = ? AND token = ?`,
+//                 [decoded.userId, token]
+//             );
+
+//             if (!session) {
+//                 return response.status(403).json({ error: 'Session expired or invalid' });
+//             }
+
+//             request.user = decoded;
+//             next();
+//         });
+//     } catch (error) {
+//         console.error('Auth error:', error);
+//         response.status(500).json({ error: 'Authentication error' });
+//     }
+// };
+
 const authenticateToken = (request, response, next) => {
     try {
         const authHeader = request.headers['authorization'];
-        
-        if (!authHeader) {
-            return response.status(401).json({ error: 'No authorization header' });
-        }
+        if (!authHeader) return response.status(401).json({ error: 'No header' });
 
         const token = authHeader.split(' ')[1];
         
-        if (!token) {
-            return response.status(401).json({ error: 'No token provided' });
-        }
-
         jwt.verify(token, SECRET_KEY, async (err, decoded) => {
             if (err) {
-                return response.status(403).json({ error: 'Invalid or expired token' });
+                console.log("JWT Verify Failed:", err.message);
+                return response.status(403).json({ error: 'Invalid token' });
             }
-
-            // Verify token exists in user_sessions
+            console.log("decoded.userId, token in authtoken=",decoded.userId, token)
+            // Check if session exists
             const session = await db.get(
                 `SELECT * FROM user_sessions WHERE user_id = ? AND token = ?`,
                 [decoded.userId, token]
             );
 
             if (!session) {
-                return response.status(403).json({ error: 'Session expired or invalid' });
+                // THIS IS WHERE YOUR 403 IS COMING FROM
+                console.log(`Session Missing for User ${decoded.userId}. Token sent: ${token.substring(0,10)}...`);
+                return response.status(403).json({ error: 'Session expired. Please login again.' });
             }
 
             request.user = decoded;
             next();
         });
     } catch (error) {
-        console.error('Auth error:', error);
-        response.status(500).json({ error: 'Authentication error' });
+        response.status(500).json({ error: 'Internal Error' });
     }
 };
-
 // ==================== USER ROUTES ====================
 
 // POST /users - Create new user
@@ -215,6 +257,7 @@ app.post('/login', async (request, response) => {
         if (!isPasswordValid) {
             return response.status(400).json({ error: 'Invalid password credentials' });
         }
+        console.log("inside login api===",user.id)
 
         // Generate new token
         const token = jwt.sign({ userId: user.id }, SECRET_KEY, { expiresIn: '24h' });
@@ -225,6 +268,7 @@ app.post('/login', async (request, response) => {
             `INSERT INTO user_sessions (user_id, token) VALUES (?, ?)`,
             [user.id, token]
         );
+        console.log("check user id , token in token api ",user.id,token)
 
         response.json({
             message: 'Login successful',
@@ -270,13 +314,89 @@ app.post('/items', authenticateToken, async (request, response) => {
 });
 
 // GET /items - List all items
-app.get('/items', async (request, response) => {
+// app.get('/items', async (request, response) => {
+//     try {
+//         const items = await db.all(`SELECT * FROM items WHERE stock > 0 ORDER BY created_at DESC`);
+//         response.json({ items });
+//     } catch (error) {
+//         console.error('Error fetching items:', error);
+//         response.status(500).json({ error: 'Internal Server Error' });
+//     }
+// });
+
+// GET /items - List all items (PUBLIC - no auth required for browsing)
+// app.get('/items', async (request, response) => {
+//     try {
+//         const page = parseInt(request.query.page) || 1;
+//         const perPage = parseInt(request.query.perPage) || 20;
+//         const search = request.query.search || '';
+//         const minPrice = parseFloat(request.query.minPrice) || 0;
+//         const maxPrice = parseFloat(request.query.maxPrice) || 999999;
+//         const inStock = request.query.inStock === 'true';
+
+//         const offset = (page - 1) * perPage;
+
+//         // Build dynamic query
+//         let whereConditions = ['price >= ?', 'price <= ?'];
+//         let queryParams = [minPrice, maxPrice];
+
+//         if (search) {
+//             whereConditions.push('(name LIKE ? OR description LIKE ?)');
+//             queryParams.push(`%${search}%`, `%${search}%`);
+//         }
+
+//         if (inStock) {
+//             whereConditions.push('stock > 0');
+//         }
+
+//         const whereClause = whereConditions.length > 0 
+//             ? `WHERE ${whereConditions.join(' AND ')}` 
+//             : '';
+
+//         // Get total count
+//         const countQuery = `SELECT COUNT(*) as total FROM items ${whereClause}`;
+//         const countResult = await db.get(countQuery, queryParams);
+//         const total = countResult.total;
+
+//         // Get paginated items
+//         const itemsQuery = `
+//             SELECT * FROM items 
+//             ${whereClause}
+//             ORDER BY created_at DESC 
+//             LIMIT ? OFFSET ?
+//         `;
+//         const items = await db.all(itemsQuery, [...queryParams, perPage, offset]);
+
+//         response.json({
+//             items,
+//             pagination: {
+//                 total,
+//                 page,
+//                 perPage,
+//                 totalPages: Math.ceil(total / perPage)
+//             }
+//         });
+//     } catch (error) {
+//         console.error('Error fetching items:', error);
+//         response.status(500).json({ error: 'Internal Server Error' });
+//     }
+// });
+
+app.get('/items', async (req, res) => {
     try {
-        const items = await db.all(`SELECT * FROM items WHERE stock > 0 ORDER BY created_at DESC`);
-        response.json({ items });
+        const items = await db.all('SELECT * FROM items ORDER BY created_at DESC');
+        
+        res.json({
+            success: true,
+            count: items.length,
+            items: items
+        });
     } catch (error) {
         console.error('Error fetching items:', error);
-        response.status(500).json({ error: 'Internal Server Error' });
+        res.status(500).json({
+            success: false,
+            error: 'Failed to fetch items'
+        });
     }
 });
 
@@ -285,6 +405,7 @@ app.get('/items', async (request, response) => {
 // POST /carts - Create cart and add items
 app.post('/carts', authenticateToken, async (request, response) => {
     const { items } = request.body; // items = [{ item_id, quantity }, ...]
+    console.log("request user in cart api =",request.user, request.body)
     const { userId } = request.user;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -305,6 +426,7 @@ app.post('/carts', authenticateToken, async (request, response) => {
                 [userId]
             );
             cart = await db.get(`SELECT * FROM carts WHERE id = ?`, [result.lastID]);
+            console.log("i found the cart", cart);
         }
 
         // Add items to cart
